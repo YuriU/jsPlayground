@@ -1,0 +1,61 @@
+<html>
+<head>
+<meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  
+    <script>
+        $(document).ready(function () {
+           
+            var container = $("#html2");
+            $("#CreateDiv").change(function () {
+                $('#html2').html('');
+              
+                var strBlocksHTML = '';
+
+               
+                var selectedvalue = $("#CreateDiv option:selected").val();
+                for (var i = 0; i <= selectedvalue; i++) {
+                    for (var n = 0; n < i ; n++) {
+                        strBlocksHTML += '<div id="pdfDiv" style=" background-color:red;  display:inline-block;   width:50px;      height:50px;       margin:2px 5px;     border:2px solid #ccc;">  </div>';
+                     
+                    }
+                    strBlocksHTML += '<div></div>';
+                     
+                                      
+                }
+
+           
+                $('#html2').append(strBlocksHTML);
+            })
+
+        });
+
+    </script>
+</head>
+
+<body style="text-align:center">
+    <div>
+        <select id="CreateDiv">
+            <option value="0"> Select</option>
+            <option value="1"> One</option>
+            <option value="2"> Two</option>
+            <option value="3"> There</option>
+            <option value="4"> Four</option>
+            <option value="5"> Five</option>
+        </select>
+    </div>
+<br />
+    <br />
+
+    <div id="html2" style="text-align:center">
+
+    </div>
+
+   
+  
+
+</body>
+  </html>
