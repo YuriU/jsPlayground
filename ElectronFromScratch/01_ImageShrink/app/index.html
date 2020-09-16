@@ -68,6 +68,12 @@
 
         });
 
+        ipcRenderer.on('image:done', e => {
+            M.toast({
+                html: `Image resized to ${slider.value}% quality`
+            });
+        });
+
     </script>
 </body>
 </html>
