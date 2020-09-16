@@ -1,2 +1,4 @@
 .vscode
 node_modules
+/ElectronFromScratch/01_ImageShrink/release-builds
+/ElectronFromScratch/01_ImageShrink/package-lock.json
