@@ -66,6 +66,8 @@
 
     <script>
       const settingsForm = document.getElementById('settings-form');
+      const nav = document.getElementById('nav');
+
       // Get settings
       ipcRenderer.on('settings:get', (e, settings) => {
           document.getElementById('cpu-overload').value = settings.cpuOverload;
@@ -97,6 +99,10 @@
           alert.classList.remove('alert');
         }, 1500)
       }
+
+      ipcRenderer.on('nav:toggle', () => {
+        nav.classList.toggle('hide');
+      });
     </script>
       
 	</body>
