@@ -42,12 +42,17 @@ const App = () => {
 			showAlert('Please enter all fields', 'danger');
 			return false;
 		}
-		
+
 		item._id = Math.floor(Math.random()*90000)+1000;
 		item.created = new Date().toString();
 
 		setLogs([...logs, item]);
 		showAlert('Log added');
+	}
+
+	function deleteItem(_id) {
+		setLogs(logs.filter((item) => item._id !== _id));
+		showAlert('Log removed');
 	}
 
 	function showAlert(message, variant = 'success', seconds = 3000) {
@@ -83,7 +88,7 @@ const App = () => {
 				<tbody>
 					{
 						logs.map((log) => 
-							(<LogItem key={log._id} log={log} />)
+							(<LogItem key={log._id} log={log} deleteItem={deleteItem} />)
 						)
 					}
 				</tbody>
