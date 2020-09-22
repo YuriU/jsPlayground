@@ -45,6 +45,11 @@ const App = () => {
 		ipcRenderer.on('logs:get', (e, logs) => {
 			setLogs(JSON.parse(logs));
 		});
+
+		ipcRenderer.on('logs:clear',() => {
+			setLogs([]);
+			setAlert('Logs cleared');
+		});
 	}, []);
 
 	function addItem(item) {
