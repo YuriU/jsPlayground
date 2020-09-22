@@ -72,7 +72,7 @@ function createMainWindow() {
 	mainWindow.on('closed', () => (mainWindow = null))
 }
 
-app.on('ready', createMainWindow)
+app.on('ready', createMainWindow);
 
 ipcMain.on('logs:load', sendLogs);
 
@@ -85,6 +85,15 @@ async function sendLogs() {
 		console.log(error);
 	}
 }
+
+ipcMain.on('logs:add', async (e, item) => {
+	try {
+		await Log.create(item);
+		await sendLogs();
+	} catch (error) {
+		console.log(error);
+	}
+});
 
 app.on('window-all-closed', () => {
 	if (process.platform !== 'darwin') {

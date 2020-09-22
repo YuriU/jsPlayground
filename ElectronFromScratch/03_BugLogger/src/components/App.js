@@ -53,10 +53,12 @@ const App = () => {
 			return false;
 		}
 
-		item._id = Math.floor(Math.random()*90000)+1000;
-		item.created = new Date().toString();
+		//item._id = Math.floor(Math.random()*90000)+1000;
+		//item.created = new Date().toString();
+		//setLogs([...logs, item]);
 
-		setLogs([...logs, item]);
+		ipcRenderer.send('logs:add', item);
+
 		showAlert('Log added');
 	}
 
