@@ -4,3 +4,4 @@ node_modules
 /ElectronFromScratch/01_ImageShrink/package-lock.json
 /MERN/devconnector/package-lock.json
 /MERN/devconnector/config/default.json
+/MERN/devconnector/client/build
