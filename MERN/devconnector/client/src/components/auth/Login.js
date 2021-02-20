@@ -1,4 +1,4 @@
-import React, { Fragment } from 'react'
+import React, { Fragment, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 export const Login = () => {
@@ -14,11 +14,6 @@ export const Login = () => {
 
     const onSubmit = async e => { 
         e.preventDefault();
-        if(password !== password2) {
-            console.log('Passwords dont match');
-        } 
-        else {
-        }
     }
 
     return (
