@@ -8,6 +8,4 @@ const setAuthToken = token => {
     }
 }
 
-const Todo = () => {};
-
 export default setAuthToken;
