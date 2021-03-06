@@ -8,7 +8,8 @@ import {
     UPDATE_LIKES,
     GET_POST,
     ADD_COMMENT,
-    REMOVE_COMMENT
+    REMOVE_COMMENT,
+    SET_POST_LOADING
 } from './types';
 
 
@@ -170,3 +171,9 @@ export const deleteComment = (postId, commentId) => async dispatch => {
         });
     }
 };
+
+export const setPostLoading = () => async dispatch => {
+    dispatch({
+        type: SET_POST_LOADING
+    })
+}

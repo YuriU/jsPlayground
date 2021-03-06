@@ -7,7 +7,8 @@ import {
     ADD_POST,
     GET_POST,
     ADD_COMMENT,
-    REMOVE_COMMENT
+    REMOVE_COMMENT,
+    SET_POST_LOADING
 } from '../actions/types'
 
 
@@ -75,6 +76,11 @@ export default function(state = initialState, action) {
                     comments: state.post.comments.filter(c => c._id !== payload)
                 },
                 loading: false
+            }
+        case SET_POST_LOADING:
+            return {
+                ...state,
+                loading: true
             }
         default:
             return state;

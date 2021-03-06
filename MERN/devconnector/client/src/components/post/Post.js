@@ -2,15 +2,16 @@ import React, { Fragment, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import Spinner from '../layout/Spinner';
-import { getPost } from '../../actions/post';
+import { getPost, setPostLoading } from '../../actions/post';
 import PostItem from '../posts/PostItem';
 import { Link } from 'react-router-dom';
 import CommentForm from './CommentForm';
 import CommentItem from './CommentItem';
 
-const Post = ({ getPost, post: { post, loading }, match }) => {
+const Post = ({ getPost, setPostLoading, post: { post, loading }, match }) => {
 
     useEffect(() => {
+        setPostLoading();
         getPost(match.params.id);
     }, [getPost]);
 
@@ -31,6 +32,7 @@ const Post = ({ getPost, post: { post, loading }, match }) => {
 
 Post.propTypes = {
     getPost: PropTypes.func.isRequired,
+    setPostLoading: PropTypes.func.isRequired,
     post: PropTypes.object.isRequired,
 }
 
@@ -38,4 +40,4 @@ const mapStateToProps = state => ({
     post: state.post
 });
 
-export default connect(mapStateToProps, { getPost })(Post);
+export default connect(mapStateToProps, { getPost, setPostLoading })(Post);
