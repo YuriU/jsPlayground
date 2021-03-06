@@ -1,10 +1,13 @@
+import { post } from 'request';
 import {
     GET_POSTS,
     POST_ERROR,
     UPDATE_LIKES,
     DELETE_POST,
     ADD_POST,
-    GET_POST
+    GET_POST,
+    ADD_COMMENT,
+    REMOVE_COMMENT
 } from '../actions/types'
 
 
@@ -53,6 +56,24 @@ export default function(state = initialState, action) {
             return {
                 ...state,
                 post: payload,
+                loading: false
+            }
+        case ADD_COMMENT:
+            return {
+                ...state,
+                post: {
+                    ...post,
+                    comments: payload
+                },
+                loading: false
+            }
+        case REMOVE_COMMENT:
+            return {
+                ...state,
+                post: {
+                    ...post,
+                    comments: state.post.comments.filter(c => c._id !== payload)
+                },
                 loading: false
             }
         default:
