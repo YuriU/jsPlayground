@@ -62,7 +62,7 @@ export default function(state = initialState, action) {
             return {
                 ...state,
                 post: {
-                    ...post,
+                    ...state.post,
                     comments: payload
                 },
                 loading: false
@@ -71,7 +71,7 @@ export default function(state = initialState, action) {
             return {
                 ...state,
                 post: {
-                    ...post,
+                    ...state.post,
                     comments: state.post.comments.filter(c => c._id !== payload)
                 },
                 loading: false
