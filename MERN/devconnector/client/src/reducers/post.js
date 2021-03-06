@@ -3,7 +3,8 @@ import {
     POST_ERROR,
     UPDATE_LIKES,
     DELETE_POST,
-    ADD_POST
+    ADD_POST,
+    GET_POST
 } from '../actions/types'
 
 
@@ -46,6 +47,12 @@ export default function(state = initialState, action) {
             return {
                 ...state,
                 posts: [payload, ...state.posts],
+                loading: false
+            }
+        case GET_POST:
+            return {
+                ...state,
+                post: payload,
                 loading: false
             }
         default:
