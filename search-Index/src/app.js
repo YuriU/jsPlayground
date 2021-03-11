@@ -60,7 +60,7 @@ const renderResults = (q, { RESULT }) => {
   for(el of RESULT) {
     const child = document.createElement('li');
     console.log(el);
-    child.innerHTML = `<span>${el._doc.title}</span>`;
+    child.innerHTML = `<a href="${el._doc.url}" target="_blank">${el._doc.title}</a>`;
     resultList.appendChild(child)
   }
   
@@ -96,11 +96,14 @@ Promise.all([
   const converted = data.map(i => ({ 
     title: i.Title,
     description: i.Description ? i.Description : '',
-    body: i.Body ? i.Body : ''
+    body: i.Body ? i.Body : '',
+    url: i.Url ? i.Url : ''
   }));
 
   await si.IMPORT([]);
-  await si.PUT(converted)
+  await si.PUT(converted, {
+    doNotIndexField: ['url']
+  })
   
   // replicate pregenerated index
   //si.IMPORT(dump).then(search)
