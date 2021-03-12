@@ -2,30 +2,112 @@
 /* global renderFacet, renderResult, renderFilter, autocomplete, stopwords, SearchIndex, fetch */
 
 let si = null;
-const buildIndexBtn = document.getElementById('build-index-btn');
 const resultList = document.getElementById('result');
 const buildIndexLocale = document.getElementById('build-index-locale');
+const buildIndexBtn = document.getElementById('build-index-btn');
+const exportIndexBtn = document.getElementById('export-index-btn');
+const importIndexLocale = document.getElementById('import-index-locale');
+const importIndexBtn = document.getElementById('import-index-btn');
+const clearIndexBtn = document.getElementById('clear-index-btn');
 
 
+/* Build index from RAW data { title, description, body, url } */
 buildIndexBtn.addEventListener('click', async () => {
   if(si) {
-    console.log(buildIndexLocale.value);
-    const response = await fetch(`data/${buildIndexLocale.value}.json`);
-    const data = await response.json();
+    try {
 
-    const converted = data.map(i => ({ 
-      title: i.Title,
-      description: i.Description ? i.Description : '',
-      body: i.Body ? i.Body : '',
-      url: i.Url ? i.Url : ''
-    }));
+      buildIndexBtn.disabled = true;
+      
+      // Load raw data for locale
+      const response = await fetch(`data/${buildIndexLocale.value}.json`);
+      const data = await response.json();
+  
+      // Map & normalize data. No empty fields allowed
+      const converted = data.map(i => ({ 
+        title: i.Title,
+        description: i.Description ? i.Description : '',
+        body: i.Body ? i.Body : '',
+        url: i.Url ? i.Url : ''
+      }));
+  
+      // Clear current state
+      await si.IMPORT([]);
 
-    await si.IMPORT([]);
-    await si.PUT(converted, {
-    doNotIndexField: ['url']
-    })
+      // Put raw data to index
+      await si.PUT(converted, {
+        doNotIndexField: ['url']
+      });
+
+      buildIndexBtn.disabled = false;
+    }
+    catch(err) {
+      buildIndexBtn.disabled = false;
+    }
   }
 });
+
+/* Export index to json file */
+exportIndexBtn.addEventListener('click', async () => {
+  if(si) {
+
+    try {
+      exportIndexBtn.disabled = true;
+
+      // Export index
+      const index = await si.EXPORT();
+      
+      // Download file pattern
+      var blob = new Blob([JSON.stringify(index)], { type: 'application/json' });
+      var link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = buildIndexLocale.value + '_index.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      exportIndexBtn.disabled = false;
+    }
+    catch(err) {
+      exportIndexBtn.disabled = false;
+    }
+  }
+});
+
+/* Clear index */
+clearIndexBtn.addEventListener('click', async () => {
+  if(si) {
+    // Replace with empty data
+    await si.IMPORT([]);
+  }
+});
+
+/* Import built index */
+importIndexBtn.addEventListener('click', async () => {
+  if(si) {
+    try {
+      importIndexBtn.disabled = true;
+      console.log('Importing');
+      console.log(importIndexLocale.value);
+
+      // Download index
+      const response = await fetch(`indexes/${importIndexLocale.value}_index.json`);
+      const data = await response.json();
+
+      // Clear existing one
+      await si.IMPORT([]);
+
+      // Import downloaded index
+      await si.IMPORT(data);
+
+      console.log('Imported');
+      importIndexBtn.disabled = false;
+    }
+    catch(err) {
+      importIndexBtn.disabled = false;
+    } 
+  }
+});
+
 
 // search
 const searchQuery = q => [{
@@ -36,10 +118,10 @@ const searchQuery = q => [{
 
 const emptySearchQuery = () => [{
   DOCUMENTS: true
-}, {
-}]
+}, {}
+]
 
-
+/* Search */
 const search = (q = '') => {
   queryState = q
   const queryTokens = q.split(/\s+/).filter(item => item)
@@ -50,8 +132,9 @@ const search = (q = '') => {
   ).then(result => renderResults(queryTokens, result))
 }
 
-const renderResults = (q, { RESULT }) => {
 
+/* Draw result list */
+const renderResults = (q, { RESULT }) => {
   resultList.innerHTML = '';
   for(el of RESULT) {
     const child = document.createElement('li');
@@ -66,10 +149,17 @@ const renderResults = (q, { RESULT }) => {
 // listen for typing and create suggestions. Listen for clicked
 // suggestions
 autocomplete('#query', { hint: false }, [{
-  source: (query, cb) => (query.length >= 3)
-    ? si.DICTIONARY(query).then(cb)
-    // eslint-disable-next-line
-    : cb([]),
+  source: async (query, cb) =>  {
+
+    if(query.length >= 3) {
+      const results = await si.DICTIONARY(query);
+      console.log(results);
+      return cb(results);
+    }
+    else {
+      return cb([]);
+    }
+  },
   templates: { suggestion: suggestion => suggestion }
 }]).on('autocomplete:selected', async function (event, suggestion) {
   
@@ -79,28 +169,13 @@ autocomplete('#query', { hint: false }, [{
 
 
 /* INITIALIZE */
-Promise.all([
-  SearchIndex({
-    name: 'mySearchIndex',
-    stopwords: []
-  }),
-  //fetch('data/en_US.json').then(res => res.json())
-]).then( async ([thisSi]) => {
+
+SearchIndex({
+  name: 'mySearchIndex',
+  stopwords: []
+})
+.then(thisSi => {
   // set global variable (in practice you might not want to do this)
-  si = thisSi
-
-  /*const converted = data.map(i => ({ 
-    title: i.Title,
-    description: i.Description ? i.Description : '',
-    body: i.Body ? i.Body : '',
-    url: i.Url ? i.Url : ''
-  }));
-
-  await si.IMPORT([]);
-  await si.PUT(converted, {
-    doNotIndexField: ['url']
-  })*/
-  
-  // replicate pregenerated index
-  //si.IMPORT(dump).then(search)
-}).catch(console.log)
+  // Replace to require or import
+  si = thisSi;
+})
