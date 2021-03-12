@@ -4,24 +4,26 @@
 let si = null;
 const buildIndexBtn = document.getElementById('build-index-btn');
 const resultList = document.getElementById('result');
+const buildIndexLocale = document.getElementById('build-index-locale');
 
 
 buildIndexBtn.addEventListener('click', async () => {
   if(si) {
+    console.log(buildIndexLocale.value);
+    const response = await fetch(`data/${buildIndexLocale.value}.json`);
+    const data = await response.json();
 
-    console.log(si);
-    const results = await si.QUERY('file', { DOCUMENTS: true })
+    const converted = data.map(i => ({ 
+      title: i.Title,
+      description: i.Description ? i.Description : '',
+      body: i.Body ? i.Body : '',
+      url: i.Url ? i.Url : ''
+    }));
 
-    
-    
-    //console.log(results);
-
-    const results2 = await si.DICTIONARY('file');
-
-    console.log(results2);
-
-    /*const exported = await si.EXPORT();
-    console.log(exported);*/
+    await si.IMPORT([]);
+    await si.PUT(converted, {
+    doNotIndexField: ['url']
+    })
   }
 });
 
@@ -29,18 +31,12 @@ buildIndexBtn.addEventListener('click', async () => {
 const searchQuery = q => [{
   SEARCH: q
 }, {
-  /*FACETS: [{
-    FIELD: ['title']
-  }],*/
   DOCUMENTS: true
 }]
 
 const emptySearchQuery = () => [{
   DOCUMENTS: true
 }, {
-  /*FACETS: [{
-    FIELD: ['title']
-  }]*/
 }]
 
 
@@ -88,12 +84,12 @@ Promise.all([
     name: 'mySearchIndex',
     stopwords: []
   }),
-  fetch('data/en_US.json').then(res => res.json())
-]).then( async ([thisSi, data ]) => {
+  //fetch('data/en_US.json').then(res => res.json())
+]).then( async ([thisSi]) => {
   // set global variable (in practice you might not want to do this)
   si = thisSi
 
-  const converted = data.map(i => ({ 
+  /*const converted = data.map(i => ({ 
     title: i.Title,
     description: i.Description ? i.Description : '',
     body: i.Body ? i.Body : '',
@@ -103,7 +99,7 @@ Promise.all([
   await si.IMPORT([]);
   await si.PUT(converted, {
     doNotIndexField: ['url']
-  })
+  })*/
   
   // replicate pregenerated index
   //si.IMPORT(dump).then(search)
