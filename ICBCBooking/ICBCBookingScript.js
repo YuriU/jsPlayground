@@ -2,9 +2,9 @@
 
 
 // ng-dirty ng-touched ng-valid
-const LICENSE_ID = '<>'
-const LAST_NAME = '<>'
-const KEY_WORD = '<>'
+const LICENSE_ID = '4959288'
+const LAST_NAME = 'ULIANETS'
+const KEY_WORD = '05022019'
 const NEAREST_CITY = 'Vancouver, BC'
 
 const HOME_URL = 'https://onlinebusiness.icbc.com/webdeas-ui/home'
@@ -18,6 +18,9 @@ let formFilled = false;
 let rescheduleClicked = false;
 let bookingSetCity = false;
 let ifDropBoxConfirmed = false;
+
+let driverProfile = null;
+let nearestAddressesInfo = null;
 
 async function dispatch() {
     console.log(getCurrentURL())
@@ -57,47 +60,37 @@ async function dispatch() {
         const areaInput = findInputByAreaLabel("Number")
 
         if(!bookingSetCity) {    
+            driverProfile = await getDriverProfile(LAST_NAME, LICENSE_ID)
             setValue(areaInput, NEAREST_CITY)
             areaInput.dispatchEvent(new KeyboardEvent('keyup', {bubbles: true, key: 'KeySpace', keyCode: 32, isTrusted:true}))
             areaInput.dispatchEvent(new Event('focusin', {}))
             bookingSetCity = true;
         }
         else {
-
             if(!ifDropBoxConfirmed) {
                 confirmChoiseInDropDown(NEAREST_CITY)
+                let nearestAddresses = await getNearestAddresses(NEAREST_CITY)
+                nearestAddresses.features.forEach((feature) => {
+                    if (feature.properties.fullAddress.trim() == NEAREST_CITY) {
+                        nearestAddressesInfo = feature;
+                    }
+                });
+                console.log(nearestAddresses.features)
+
                 const searchButton = findButtonByClassAndText("mat-button-wrapper", "Search")
                 searchButton.click()
-                const driverProfile = await getDriverProfile(LAST_NAME, LICENSE_ID)
-                console.log(driverProfile)
                 ifDropBoxConfirmed = true
+                console.log(driverProfile)
             } else {
-                
+                if(driverProfile.eligibleExams.length == 0) {
+                    console.log("Your are not eligible for road test")
+                } else {
+                    let existingAppointment = driverProfile.webAappointments.length == 0 ? null : driverProfile.webAappointments[0];
+                    await checkForSlots(driverProfile.eligibleExams[0].code, driverProfile.eligibleExams[0].eed.date, existingAppointment)
+                }
             }
             
         }
-        
-        /*const event = new KeyboardEvent('keypress', {
-            key: 'Space',  // Specify the key you want to emulate
-            keyCode: 32,   // Specify the key code (optional)
-            bubbles: true
-          });
-
-          areaInput.focus()
-          areaInput.dispatchEvent(event)
-          const keyDownEvent = new KeyboardEvent('keydown', {
-            key: 'Space',
-            keyCode: 32,
-            bubbles: true
-          });
-          areaInput.dispatchEvent(keyDownEvent)
-
-          const keyUpEvent = new KeyboardEvent('keyup', {
-            key: 'Space',
-            keyCode: 32,
-            bubbles: true
-          });
-          areaInput.dispatchEvent(keyUpEvent)*/
     }
     else {
         console.log(getCurrentURL())
@@ -111,6 +104,13 @@ async function dispatch() {
     console.log()
 }
 
+async function checkForSlots(examType, eligibleDate, existingBooking) {
+    //console.log(`Checking for ${examType}`)
+
+    //const slots = await getLocationAppointments(2, eligibleDate, examType, LAST_NAME, LICENSE_ID)
+    //console.log(slots)
+}
+
 function confirmChoiseInDropDown(text) {
     let listBox = document.getElementById('mat-autocomplete-0')
     for (let i = 0; i< listBox.childNodes.length; i++) {
@@ -122,7 +122,6 @@ function confirmChoiseInDropDown(text) {
                 node.click()
                 return
             }
-            
         }
     }
 }
@@ -213,6 +212,31 @@ function findCheckbox() {
     }
 }
 
+async function getLocationAppointments(locationId, fromDate, type, lastName, licenseNumber) {
+    const response = await fetch('https://onlinebusiness.icbc.com/deas-api/v1/web/getAvailableAppointments', {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/plain, */*",
+            "Expires": "0",
+            "pragma": "no-cache",
+            "Cache-control": "no-cache, no-store",
+            Authorization: localStorage.getItem("AUTH_TOKEN")
+        },
+        body: JSON.stringify({ 
+            "aPosID": locationId,
+            "examType": type,
+            "examDate": fromDate,
+            "ignoreReserveTime":false,
+            "prfDaysOfWeek":"[0,1,2,3,4,5,6]",
+            "prfPartsOfDay":"[0,1]",
+            "lastName": lastName,
+            "licenseNumber": licenseNumber
+        })
+    })
+    return response.json();
+}
+
 async function getDriverProfile(driverLastName, licence) {
     const response = await fetch('https://onlinebusiness.icbc.com/deas-api/v1/web/driver', {
         method: "PUT",
@@ -228,6 +252,18 @@ async function getDriverProfile(driverLastName, licence) {
             drvrLastName: driverLastName,
             licenceNumber: licence
         })
+    })
+    return response.json();
+}
+
+async function getNearestAddresses(cityName) {
+    const cityNameEncoded = encodeURIComponent(cityName);
+    const response = await fetch(`https://geocoder.api.gov.bc.ca/addresses.json?minScore=65&matchPrecision=occupant,unit,site,civic_number,block,locality&maxResults=5&echo=false&locationDescriptor=accessPoint&brief=true&autoComplete=true&addressString=${cityNameEncoded}`, {
+        method: "GET",
+        headers: {
+            "Accept": "application/json, text/plain, */*",
+            Authorization: localStorage.getItem("AUTH_TOKEN")
+        }
     })
     return response.json();
 }
