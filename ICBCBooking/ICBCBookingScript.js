@@ -2,9 +2,9 @@
 
 
 // ng-dirty ng-touched ng-valid
-const LICENSE_ID = '4959288'
-const LAST_NAME = 'ULIANETS'
-const KEY_WORD = '05022019'
+const LICENSE_ID = '<>>'
+const LAST_NAME = '<>'
+const KEY_WORD = '<>'
 const NEAREST_CITY = 'Vancouver, BC'
 
 const HOME_URL = 'https://onlinebusiness.icbc.com/webdeas-ui/home'
@@ -21,6 +21,152 @@ let ifDropBoxConfirmed = false;
 
 let driverProfile = null;
 let nearestAddressesInfo = null;
+let nearestLocations = null
+
+const urlToFunction = {
+    'https://onlinebusiness.icbc.com/webdeas-ui/home' : processHomePage,
+    'https://onlinebusiness.icbc.com/webdeas-ui/login;type=driver': processLoginPage,
+    'https://onlinebusiness.icbc.com/webdeas-ui/driver': processDriverPage,
+    'https://onlinebusiness.icbc.com/webdeas-ui/booking': processBookingPage
+}
+
+
+let prevCall = null
+async function dispatch2() {
+    const url = getCurrentURL();
+    const handler = urlToFunction[url];
+    if(handler == null) {
+        console.log('Default handler')
+        return
+    }
+
+    if (prevCall == null || prevCall.url != url) {
+        const result = await handler(null)
+        //console.log(result)
+        prevCall = {
+            url: url,
+            result: result,
+            time: Date.now()
+        }
+        //console.log(prevCall)
+        return;
+    } else {
+        const now = Date.now()
+        if (prevCall.result != null 
+            && prevCall.result.secondsTimeout != null
+            && Math.floor((now - prevCall.time) / 1000) < prevCall.result.secondsTimeout) {
+                return;
+            }
+
+        const result = await handler(prevCall.result.status)
+        //console.log(result)
+        prevCall = {
+            url: url,
+            result: result != null ? result : prevCall.result,
+            time: Date.now()
+        }
+        //console.log(prevCall)
+    }
+}
+
+async function processHomePage(prevState) {
+    const button = findButtonByClass("mat-button-wrapper")
+    formFilled = false;
+    button.click()
+    return (result(null, 1))
+}
+
+async function processLoginPage(prevState) {
+    if (prevState == null) {
+        setValue(findInputByAreaLabel('driver-name'), LAST_NAME)
+        setValue(findInputByAreaLabel('driver-licence'), LICENSE_ID)
+        setValue(findInputByAreaLabel('keyword'), KEY_WORD)    
+        findCheckbox().click()
+        return result('FormFilled', 1)
+    } 
+    else if(prevState == 'FormFilled') {
+        const signIn = findButtonByClassAndText("mat-button-wrapper", "Sign in")
+        formFilled = false;
+        signIn.click()
+        return result('Done', null)
+    }
+    else {
+        console.error('Unknown state')
+    }
+}
+
+async function processDriverPage(prevState) {
+    if (prevState == null) {
+        const reschedule = findButtonByClassAndText("mat-button-wrapper", "Reschedule appointment")
+        reschedule.click()
+        return result('rescheduleClicked', 1);
+    }
+
+    if (prevState == 'rescheduleClicked') {
+        const yesButton = findButtonByClassAndText("mat-button-wrapper", "Yes")
+        yesButton.click()
+        return result('Done', null)
+    }
+}
+
+async function processBookingPage(prevState) {
+    if (prevState == null) {
+        const areaInput = findInputByAreaLabel("Number")
+        setValue(areaInput, NEAREST_CITY)
+        areaInput.dispatchEvent(new KeyboardEvent('keyup', {bubbles: true, key: 'KeySpace', keyCode: 32, isTrusted:true}))
+        areaInput.dispatchEvent(new Event('focusin', {}))
+        return result('CitySelected', 1)
+    }
+
+    if (prevState == 'CitySelected') {
+        confirmChoiseInDropDown(NEAREST_CITY)
+        const searchButton = findButtonByClassAndText("mat-button-wrapper", "Search")
+        searchButton.click()
+        return result('LocationsSelected', 1)
+    }
+
+    if (prevState == 'LocationsSelected') {
+        driverProfile = await getDriverProfile(LAST_NAME, LICENSE_ID)
+        let nearestAddresses = await getNearestAddresses(NEAREST_CITY)
+        nearestAddresses.features.forEach((feature) => {
+            if (feature.properties.fullAddress.trim() == NEAREST_CITY) {
+                nearestAddressesInfo = feature;
+            }
+        });
+        [lng, lat] = nearestAddressesInfo.geometry.coordinates;
+        nearestLocations = await getNearestPositions(lng, lat, driverProfile.eligibleExams[0].code, driverProfile.eligibleExams[0].eed.date)
+        console.log(nearestLocations)
+        return result('LocationsLoaded' , 1)
+    }
+
+    if (prevState == 'LocationsLoaded') {
+        const elements = document.getElementsByClassName('department-container');
+        for (let i = 0; i< elements.length; i++) {
+            const departmentNode = elements[i];
+            const titleNode = departmentNode.querySelector('.department-title');
+
+            let agency = null
+            for(let j = 0; j< nearestLocations.length; j++) {
+                console.log(nearestLocations[j].pos.agency)
+                if(nearestLocations[j].pos.agency == titleNode.innerText.trim()) {
+                    agency = nearestLocations[j]
+                }
+            }
+
+            const node = document.createElement('div')
+            node.style.border = "thick solid #FF0000"
+            node.style.width ="200px";
+            node.style.height ="50px";
+            node.innerText = agency.pos.posId;
+            departmentNode.appendChild(node)
+        }
+        return result('MarkersAdded', 1)
+    }
+}
+
+function result(status, secondsTimeout) {
+    return { status: status, secondsTimeout: secondsTimeout }
+}
 
 async function dispatch() {
     console.log(getCurrentURL())
@@ -31,12 +177,10 @@ async function dispatch() {
     }
     else if(LOGIN_URL === getCurrentURL()) {
         if(!formFilled) {
-
             setValue(findInputByAreaLabel('driver-name'), LAST_NAME)
             setValue(findInputByAreaLabel('driver-licence'), LICENSE_ID)
             setValue(findInputByAreaLabel('keyword'), KEY_WORD)    
             findCheckbox().click()
-
             
             formFilled = true
         } else {
@@ -75,7 +219,6 @@ async function dispatch() {
                         nearestAddressesInfo = feature;
                     }
                 });
-                console.log(nearestAddresses.features)
 
                 const searchButton = findButtonByClassAndText("mat-button-wrapper", "Search")
                 searchButton.click()
@@ -86,7 +229,13 @@ async function dispatch() {
                     console.log("Your are not eligible for road test")
                 } else {
                     let existingAppointment = driverProfile.webAappointments.length == 0 ? null : driverProfile.webAappointments[0];
-                    await checkForSlots(driverProfile.eligibleExams[0].code, driverProfile.eligibleExams[0].eed.date, existingAppointment)
+                    await checkForSlots(driverProfile.eligibleExams[0].code, driverProfile.eligibleExams[0].eed.date, existingAppointment);
+
+                    [lat, lng] = nearestAddressesInfo.geometry.coordinates;
+                    const locations = await getNearestPositions(lng, lat, driverProfile.eligibleExams[0].code, driverProfile.eligibleExams[0].eed.date)
+                    console.log(locations)
+
+
                 }
             }
             
@@ -142,6 +291,7 @@ function getCurrentURL () {
     return window.location.href
 }
 
+// DOM section
 function findButtonByClass(buttonClass) {
     const collection = document.getElementsByClassName(buttonClass);
     if (collection.length == 0) {
@@ -212,6 +362,9 @@ function findCheckbox() {
     }
 }
 
+
+// Requests section
+
 async function getLocationAppointments(locationId, fromDate, type, lastName, licenseNumber) {
     const response = await fetch('https://onlinebusiness.icbc.com/deas-api/v1/web/getAvailableAppointments', {
         method: "POST",
@@ -256,6 +409,28 @@ async function getDriverProfile(driverLastName, licence) {
     return response.json();
 }
 
+async function getNearestPositions(lng, lat, examType, startDate) {
+    const response = await fetch('https://onlinebusiness.icbc.com/deas-api/v1/web/getNearestPos', {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/plain, */*",
+            "Expires": "0",
+            "pragma": "no-cache",
+            "Cache-control": "no-cache, no-store",
+            Authorization: localStorage.getItem("AUTH_TOKEN")
+        },
+        body: JSON.stringify(
+            { "lng": lng,
+              "lat": lat,
+              "examType": examType,
+              "startDate": startDate
+            }
+        )
+    })
+    return response.json();
+}
+
 async function getNearestAddresses(cityName) {
     const cityNameEncoded = encodeURIComponent(cityName);
     const response = await fetch(`https://geocoder.api.gov.bc.ca/addresses.json?minScore=65&matchPrecision=occupant,unit,site,civic_number,block,locality&maxResults=5&echo=false&locationDescriptor=accessPoint&brief=true&autoComplete=true&addressString=${cityNameEncoded}`, {
@@ -268,4 +443,4 @@ async function getNearestAddresses(cityName) {
     return response.json();
 }
 
-const interval = setInterval(dispatch, TIMER_INTERVAL)
+const interval = setInterval(dispatch2, TIMER_INTERVAL)
