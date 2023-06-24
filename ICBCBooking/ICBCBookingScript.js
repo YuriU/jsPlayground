@@ -2,7 +2,7 @@
 
 
 // ng-dirty ng-touched ng-valid
-const LICENSE_ID = '<>>'
+const LICENSE_ID = '<>'
 const LAST_NAME = '<>'
 const KEY_WORD = '<>'
 const NEAREST_CITY = 'Vancouver, BC'
@@ -140,6 +140,15 @@ async function processBookingPage(prevState) {
     }
 
     if (prevState == 'LocationsLoaded') {
+
+        const titleElement = document.querySelector('.mat-toolbar')
+        const statusNode = document.createElement('div')
+        statusNode.style.width ="400px";
+        statusNode.style.height ="60px";
+        statusNode.style.border = "thick solid #FF0000"
+        statusNode.setAttribute("id", `global-status`)
+        titleElement.appendChild(statusNode)
+
         const elements = document.getElementsByClassName('department-container');
         for (let i = 0; i< elements.length; i++) {
             const departmentNode = elements[i];
@@ -154,6 +163,7 @@ async function processBookingPage(prevState) {
             }
 
             const node = document.createElement('div')
+            node.setAttribute("id", `booking-status-${agency.pos.posId}`)
             node.style.border = "thick solid #FF0000"
             node.style.width ="200px";
             node.style.height ="50px";
@@ -162,10 +172,41 @@ async function processBookingPage(prevState) {
         }
         return result('MarkersAdded', 1)
     }
+
+    if (prevState == 'MarkersAdded') {
+        const eligibleExam = driverProfile.eligibleExams[0];
+        const eligibleDate = eligibleExam.eed.date
+        const eligibleExamCode = eligibleExam.code
+        for(let i = 0; i < nearestLocations.length; i++) {
+            const location = nearestLocations[i]
+            console.log('Requesting slots for ' + location.pos.agency)
+            const appointments = await getLocationAppointments(location.pos.posId, eligibleDate, eligibleExamCode, LAST_NAME, LICENSE_ID)
+            if(appointments.length == 0) {
+                document.getElementById(`booking-status-${location.pos.posId}`).innerText = 'No Slots'
+            } else {
+                const earliesAppointment = findEarliestAppointment(appointments)
+            }
+
+            //console.log(appointments)
+        }
+
+        return result('MarkersAdded', 10)
+    }
 }
 
 function result(status, secondsTimeout) {
     return { status: status, secondsTimeout: secondsTimeout }
+}
+
+function findEarliestAppointment(appointments) {
+
+    for (let i = 0; i < appointments.length; i++) {
+        const appointment = appointments[i];
+
+        console.log(appointment)
+    }
+
+    return null;
 }
 
 async function dispatch() {
@@ -174,31 +215,6 @@ async function dispatch() {
         const button = findButtonByClass("mat-button-wrapper")
         formFilled = false;
         button.click()
-    }
-    else if(LOGIN_URL === getCurrentURL()) {
-        if(!formFilled) {
-            setValue(findInputByAreaLabel('driver-name'), LAST_NAME)
-            setValue(findInputByAreaLabel('driver-licence'), LICENSE_ID)
-            setValue(findInputByAreaLabel('keyword'), KEY_WORD)    
-            findCheckbox().click()
-            
-            formFilled = true
-        } else {
-            const signIn = findButtonByClassAndText("mat-button-wrapper", "Sign in")
-            formFilled = false;
-            signIn.click()
-        }   
-    }
-    else if(DRIVER_PAGE_URL === getCurrentURL()) { 
-        if (!rescheduleClicked) {
-            const reschedule = findButtonByClassAndText("mat-button-wrapper", "Reschedule appointment")
-            reschedule.click()
-            rescheduleClicked = true
-        } else {
-            const yesButton = findButtonByClassAndText("mat-button-wrapper", "Yes")
-            rescheduleClicked = false
-            yesButton.click()
-        }
     }
     else if(BOOKING_PAGE_URL === getCurrentURL()) { 
         const areaInput = findInputByAreaLabel("Number")
